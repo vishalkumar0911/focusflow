@@ -1,3 +1,5 @@
+import 'features/activities/activity_screen.dart';
+import 'features/activities/activity_store.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -31,13 +33,22 @@ class FocusFlowHome extends StatefulWidget {
 class _FocusFlowHomeState extends State<FocusFlowHome> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = const [
-    HomePage(),
-    SchedulePage(),
-    AddActivityPage(),
-    ProgressPage(),
-    SettingsPage(),
-  ];
+  final ActivityStore _activityStore = ActivityStore();
+
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _pages = [
+      const HomePage(),
+      const SchedulePage(),
+      ActivityScreen(activityStore: _activityStore),
+      const ProgressPage(),
+      const SettingsPage(),
+    ];
+  }
 
   void _onNavigationItemSelected(int index) {
     setState(() {
