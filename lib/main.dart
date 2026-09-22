@@ -1,5 +1,7 @@
 import 'features/activities/activity_screen.dart';
 import 'features/activities/activity_store.dart';
+import 'features/schedule/schedule_screen.dart';
+import 'features/schedule/schedule_store.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -34,6 +36,7 @@ class _FocusFlowHomeState extends State<FocusFlowHome> {
   int _selectedIndex = 0;
 
   final ActivityStore _activityStore = ActivityStore();
+  final ScheduleStore _scheduleStore = ScheduleStore();
 
   late final List<Widget> _pages;
 
@@ -42,8 +45,11 @@ class _FocusFlowHomeState extends State<FocusFlowHome> {
     super.initState();
 
     _pages = [
-      const HomePage(),
-      const SchedulePage(),
+      HomePage(activityStore: _activityStore, scheduleStore: _scheduleStore),
+      ScheduleScreen(
+        scheduleStore: _scheduleStore,
+        activityStore: _activityStore,
+      ),
       ActivityScreen(activityStore: _activityStore),
       const ProgressPage(),
       const SettingsPage(),
@@ -96,94 +102,150 @@ class _FocusFlowHomeState extends State<FocusFlowHome> {
 }
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+  final ActivityStore activityStore;
+  final ScheduleStore scheduleStore;
+
+  const HomePage({
+    super.key,
+    required this.activityStore,
+    required this.scheduleStore,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('FocusFlow'),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.notifications_outlined),
-            tooltip: 'Notifications',
+    return AnimatedBuilder(
+      animation: Listenable.merge([activityStore, scheduleStore]),
+      builder: (context, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('FocusFlow'),
+            actions: [
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.notifications_outlined),
+                tooltip: 'Notifications',
+              ),
+            ],
           ),
-        ],
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 900),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Good morning!',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "Here's your plan for today.",
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                const SizedBox(height: 32),
-
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Today's Progress",
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 16),
-                        const Text('0 / 0 sessions completed'),
-                        const SizedBox(height: 12),
-                        const LinearProgressIndicator(value: 0),
-                      ],
+          body: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 900),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Good morning!',
+                      style: Theme.of(context).textTheme.headlineMedium,
                     ),
-                  ),
-                ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Here's your plan for today.",
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                    const SizedBox(height: 32),
 
-                const SizedBox(height: 24),
-
-                Text(
-                  "Today's Schedule",
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 16),
-
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          const Icon(Icons.event_note_outlined, size: 48),
-                          const SizedBox(height: 12),
-                          Text(
-                            'No activities scheduled yet.',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Add your first activity to start building your routine.',
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Today's Progress",
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text('0 / 0 sessions completed'),
+                            const SizedBox(height: 12),
+                            const LinearProgressIndicator(value: 0),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
+
+                    const SizedBox(height: 24),
+
+                    Text(
+                      "Today's Schedule",
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 16),
+
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: scheduleStore.schedules.isEmpty
+                            ? Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Column(
+                                    children: [
+                                      const Icon(
+                                        Icons.event_note_outlined,
+                                        size: 48,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'No activities scheduled yet.',
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.titleMedium,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      const Text(
+                                        'Add your first activity to start building your routine.',
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : Column(
+                                children: scheduleStore.schedules.map((
+                                  schedule,
+                                ) {
+                                  final activity = activityStore.activities
+                                      .firstWhere(
+                                        (activity) =>
+                                            activity.id == schedule.activityId,
+                                      );
+
+                                  final time = TimeOfDay.fromDateTime(
+                                    schedule.startTime,
+                                  );
+
+                                  return ListTile(
+                                    leading: CircleAvatar(
+                                      child: Text(
+                                        '${schedule.durationMinutes}',
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                    ),
+                                    title: Text(activity.title),
+                                    subtitle: Text(
+                                      '${time.format(context)} • '
+                                      '${schedule.durationMinutes} min',
+                                    ),
+                                    trailing: Text(
+                                      schedule.status.name,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

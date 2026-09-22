@@ -9,33 +9,38 @@ class ActivityList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activities = activityStore.activities;
+    return ListenableBuilder(
+      listenable: activityStore,
+      builder: (context, child) {
+        final activities = activityStore.activities;
 
-    if (activities.isEmpty) {
-      return const Center(
-        child: Text(
-          'No activities created yet.',
-          style: TextStyle(fontSize: 16),
-        ),
-      );
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.all(24),
-      itemCount: activities.length,
-      separatorBuilder: (_, index) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final activity = activities[index];
-
-        return Card(
-          child: ListTile(
-            leading: const CircleAvatar(child: Icon(Icons.task_alt)),
-            title: Text(activity.title),
-            subtitle: Text(
-              '${activity.category} • ${activity.durationMinutes} min',
+        if (activities.isEmpty) {
+          return const Center(
+            child: Text(
+              'No activities created yet.',
+              style: TextStyle(fontSize: 16),
             ),
-            trailing: const Icon(Icons.chevron_right),
-          ),
+          );
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.all(24),
+          itemCount: activities.length,
+          separatorBuilder: (_, index) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final activity = activities[index];
+
+            return Card(
+              child: ListTile(
+                leading: const CircleAvatar(child: Icon(Icons.task_alt)),
+                title: Text(activity.title),
+                subtitle: Text(
+                  '${activity.category} • ${activity.durationMinutes} min',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+              ),
+            );
+          },
         );
       },
     );
