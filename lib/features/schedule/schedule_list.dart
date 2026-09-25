@@ -1,22 +1,29 @@
 import 'package:flutter/material.dart';
 
 import '../activities/activity_store.dart';
+import '../sessions/session_controller.dart';
+import '../sessions/session_store.dart';
+import '../sessions/study_session.dart';
 import 'schedule_store.dart';
 
 class ScheduleList extends StatelessWidget {
   final ScheduleStore scheduleStore;
   final ActivityStore activityStore;
+  final SessionStore sessionStore;
+  final SessionController sessionController;
 
   const ScheduleList({
     super.key,
     required this.scheduleStore,
     required this.activityStore,
+    required this.sessionStore,
+    required this.sessionController,
   });
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: scheduleStore,
+      listenable: Listenable.merge([scheduleStore, sessionStore]),
       builder: (context, child) {
         final schedules = scheduleStore.schedules;
 
@@ -55,19 +62,58 @@ class ScheduleList extends StatelessWidget {
                   '${_formatTime(schedule.startTime)} • '
                   '${schedule.durationMinutes} min',
                 ),
-                trailing: Text(
-                  schedule.status.name,
-                  style: TextStyle(
-                    color: _statusColor(schedule.status.name),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                trailing: _buildSessionActions(context, schedule.id),
               ),
             );
           },
         );
       },
     );
+  }
+
+  Widget _buildSessionActions(BuildContext context, String scheduleId) {
+    final session = sessionStore.sessions
+        .where((session) => session.scheduleId == scheduleId)
+        .firstOrNull;
+
+    if (session == null) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextButton(
+            onPressed: () {
+              sessionController.startSession(scheduleId);
+            },
+            child: const Text('Start'),
+          ),
+          TextButton(
+            onPressed: () {
+              sessionController.skipSession(scheduleId);
+            },
+            child: const Text('Skip'),
+          ),
+        ],
+      );
+    }
+
+    switch (session.status) {
+      case SessionStatus.inProgress:
+        return TextButton(
+          onPressed: () {
+            sessionController.completeSession(scheduleId);
+          },
+          child: const Text('Complete'),
+        );
+
+      case SessionStatus.completed:
+        return const Text('Completed');
+
+      case SessionStatus.skipped:
+        return const Text('Skipped');
+
+      case SessionStatus.missed:
+        return const Text('Missed');
+    }
   }
 
   String _formatTime(DateTime time) {
@@ -79,20 +125,5 @@ class ScheduleList extends StatelessWidget {
     final displayMinute = minute.toString().padLeft(2, '0');
 
     return '$displayHour:$displayMinute $period';
-  }
-
-  Color _statusColor(String status) {
-    switch (status) {
-      case 'completed':
-        return Colors.green;
-      case 'skipped':
-        return Colors.orange;
-      case 'missed':
-        return Colors.red;
-      case 'inProgress':
-        return Colors.blue;
-      default:
-        return Colors.grey;
-    }
   }
 }

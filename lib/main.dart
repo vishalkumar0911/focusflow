@@ -2,6 +2,9 @@ import 'features/activities/activity_screen.dart';
 import 'features/activities/activity_store.dart';
 import 'features/schedule/schedule_screen.dart';
 import 'features/schedule/schedule_store.dart';
+import 'features/sessions/session_controller.dart';
+import 'features/sessions/session_store.dart';
+import 'features/schedule/schedule.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -37,6 +40,8 @@ class _FocusFlowHomeState extends State<FocusFlowHome> {
 
   final ActivityStore _activityStore = ActivityStore();
   final ScheduleStore _scheduleStore = ScheduleStore();
+  final SessionStore _sessionStore = SessionStore();
+  late final SessionController _sessionController;
 
   late final List<Widget> _pages;
 
@@ -44,11 +49,22 @@ class _FocusFlowHomeState extends State<FocusFlowHome> {
   void initState() {
     super.initState();
 
+    _sessionController = SessionController(
+      sessionStore: _sessionStore,
+      scheduleStore: _scheduleStore,
+    );
+
     _pages = [
-      HomePage(activityStore: _activityStore, scheduleStore: _scheduleStore),
+      HomePage(
+        activityStore: _activityStore,
+        scheduleStore: _scheduleStore,
+        sessionStore: _sessionStore,
+      ),
       ScheduleScreen(
         scheduleStore: _scheduleStore,
         activityStore: _activityStore,
+        sessionStore: _sessionStore,
+        sessionController: _sessionController,
       ),
       ActivityScreen(activityStore: _activityStore),
       const ProgressPage(),
@@ -104,18 +120,30 @@ class _FocusFlowHomeState extends State<FocusFlowHome> {
 class HomePage extends StatelessWidget {
   final ActivityStore activityStore;
   final ScheduleStore scheduleStore;
+  final SessionStore sessionStore;
 
   const HomePage({
     super.key,
     required this.activityStore,
     required this.scheduleStore,
+    required this.sessionStore,
   });
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([activityStore, scheduleStore]),
+      animation: Listenable.merge([activityStore, scheduleStore, sessionStore]),
       builder: (context, child) {
+        final totalSessions = scheduleStore.schedules.length;
+
+        final completedSessions = scheduleStore.schedules.where((schedule) {
+          return schedule.status == ScheduleStatus.completed;
+        }).length;
+
+        final progress = totalSessions == 0
+            ? 0.0
+            : completedSessions / totalSessions;
+
         return Scaffold(
           appBar: AppBar(
             title: const Text('FocusFlow'),
@@ -136,7 +164,7 @@ class HomePage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Good morning!',
+                      _getGreeting(),
                       style: Theme.of(context).textTheme.headlineMedium,
                     ),
                     const SizedBox(height: 8),
@@ -157,9 +185,11 @@ class HomePage extends StatelessWidget {
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
                             const SizedBox(height: 16),
-                            const Text('0 / 0 sessions completed'),
+                            Text(
+                              '$completedSessions / $totalSessions sessions completed',
+                            ),
                             const SizedBox(height: 12),
-                            const LinearProgressIndicator(value: 0),
+                            LinearProgressIndicator(value: progress),
                           ],
                         ),
                       ),
@@ -247,6 +277,24 @@ class HomePage extends StatelessWidget {
         );
       },
     );
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+
+    if (hour >= 5 && hour < 12) {
+      return 'Good morning!';
+    }
+
+    if (hour >= 12 && hour < 17) {
+      return 'Good afternoon!';
+    }
+
+    if (hour >= 17 && hour < 21) {
+      return 'Good evening!';
+    }
+
+    return 'Good night!';
   }
 }
 
